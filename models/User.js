@@ -3,13 +3,40 @@ const { Schema, model } = require("mongoose");
 // TODO change user model according to exam description
 // TODO add validation
 
+const NAME_PATTERN = /^[a-zA-Z-]+$/;
+const EMAIL_PATTERN = /^([a-zA-Z]+)@([a-zA-Z-]+)\.([a-zA-Z-]+)$/;
+
 const userSchema = new Schema({
-  username: { type: String, required: true },
+  firstName: {
+    type: String,
+    minlength: [3, "first name must be at least 3 chars long"],
+    validate: {
+      validator(value) {
+        return NAME_PATTERN.test(value);
+      },
+      message: "firs name may contain only english letters",
+    },
+  },
+  lastName: {
+    type: String,
+    minlength: [5, "Last name must be at least 5 chars long"],
+    validate: {
+      validator(value) {
+        return NAME_PATTERN.test(value);
+      },
+      message: "Last name may contain only english letters",
+    },
+  },
+  email: { type: String, required: [true, "email is required"], validate: {
+    validator(value) {
+      return EMAIL_PATTERN.test(value)
+    }, message: "Email may contain only english letters"
+  } },
   hashedPassword: { type: String, required: true },
 });
 
 userSchema.index(
-  { username: 1 },
+  { email: 1 },
   {
     unique: true,
     collation: {
