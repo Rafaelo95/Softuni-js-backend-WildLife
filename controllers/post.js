@@ -1,6 +1,6 @@
 const { isUser } = require("../middleware/guards");
-const { createPost } = require("../services/postService");
-const {mapErrors} = require("../util/mappers");
+const { createPost, updatePost, getPostById, deletePost } = require("../services/postService");
+const { mapErrors, postViewModel } = require("../util/mappers");
 
 const router = require("express").Router();
 
@@ -16,15 +16,71 @@ router.post("/create", isUser(), async (req, res) => {
     date: req.body.date,
     image: req.body.image,
     description: req.body.description,
-    author: userId
-  }
+    author: userId,
+  };
   try {
-    await createPost(post)
-    res.redirect('/catalog')
+    await createPost(post);
+    res.redirect("/catalog");
   } catch (err) {
     console.log(err);
-    const errors = mapErrors(err)
-    res.render('create', {title: "Create Post", errors, data: post})
+    const errors = mapErrors(err);
+    res.render("create", { title: "Create Post", errors, data: post });
+  }
+});
+
+router.get("/edit/:id", isUser(), async (req, res) => {
+  const id = req.params.id;
+  const post = postViewModel(await getPostById(id));
+
+  if (req.session.user._id != post.author._id) {
+    return res.redirect("/login");
+  }
+
+  res.render("edit", { title: "Edit Post", post });
+});
+
+router.post("/edit/:id", isUser(), async (req, res) => {
+  const id = req.params.id;
+  const existing = postViewModel(await getPostById(id));
+
+  if (req.session.user._id != existing.author._id) {
+    return res.redirect("/login");
+  }
+  const post = {
+    title: req.body.title,
+    keyword: req.body.keyword,
+    location: req.body.location,
+    date: req.body.date,
+    image: req.body.image,
+    description: req.body.description,
+  };
+
+  try {
+    await updatePost(id, post);
+    res.redirect("/details/" + id);
+  } catch (err) {
+    console.log(err);
+    const errors = mapErrors(err);
+    post._id = id;
+    res.render("edit", { title: "Edit Post", post, errors });
+  }
+});
+
+router.get("/delete/:id", isUser(), async (req, res) => {
+  const id = req.params.id;
+  const existing = postViewModel(await getPostById(id));
+
+  if (req.session.user._id != existing.author._id) {
+    return res.redirect("/login");
+  }
+
+  try {
+    await deletePost(id);
+    res.redirect("/catalog")
+  } catch (err) {
+    console.log(err);
+    const errors = mapErrors(err);
+    res.render("/catalog", { title: existing.title, errors });
   }
 })
 
